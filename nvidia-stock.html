@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NVIDIA Stock Visualization</title>
+  <style>
+    :root {
+      --nvidia-green: #76b900;
+      --nvidia-dark: #1a1a1a;
+      --chart-height: 400px;
+      --chart-width: 100%;
+      --animation-duration: 15s;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      overflow: hidden;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--nvidia-dark);
+      margin-bottom: 30px;
+      font-weight: 700;
+    }
+
+    .chart-container {
+      position: relative;
+      height: var(--chart-height);
+      width: var(--chart-width);
+      margin-bottom: 40px;
+      border-bottom: 2px solid #ddd;
+      border-left: 2px solid #ddd;
+    }
+
+    .y-axis {
+      position: absolute;
+      left: -40px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .y-axis span {
+      transform: translateY(50%);
+    }
+
+    .x-axis {
+      position: absolute;
+      bottom: -30px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .stock-line {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      stroke-dasharray: 2000;
+      stroke-dashoffset: 2000;
+      animation: drawLine var(--animation-duration) linear forwards;
+      overflow: visible;
+    }
+
+    .stock-line polyline {
+      fill: none;
+      stroke: var(--nvidia-green);
+      stroke-width: 3;
+    }
+
+    .stock-area {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      opacity: 0;
+      animation: fadeIn var(--animation-duration) linear forwards;
+    }
+
+    .stock-area polygon {
+      fill: rgba(118, 185, 0, 0.1);
+      stroke: none;
+    }
+
+    @keyframes drawLine {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.3;
+      }
+      100% {
+        opacity: 0.3;
+      }
+    }
+
+    .announcement {
+      position: absolute;
+      bottom: 0;
+      opacity: 0;
+    }
+
+    .announcement-marker {
+      width: 12px;
+      height: 12px;
+      background-color: #ff5722;
+      border-radius: 50%;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .announcement-marker::after {
+      content: '';
+      position: absolute;
+      height: 350px;
+      width: 1px;
+      background: rgba(255, 87, 34, 0.3);
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .announcement-text {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-45deg);
+      background-color: #ff5722;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    @keyframes fadeInAnnouncement {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      margin-top: 50px;
+      gap: 30px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      border-radius: 3px;
+    }
+
+    .nvidia-color {
+      background-color: var(--nvidia-green);
+    }
+
+    .announcement-color {
+      background-color: #ff5722;
+    }
+
+    .title-highlight {
+      color: var(--nvidia-green);
+      font-weight: bold;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    /* For reveal.js compatibility */
+    .reveal .slides section .container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><span class="title-highlight">NVIDIA</span> Stock Performance</h1>
+    <p class="subtitle">Stock price movement with DeepSeek announcements (Oct 2024 - Mar 2025)</p>
+    
+    <div class="chart-container" id="chart">
+      <!-- Y-axis labels will be dynamically generated -->
+      <div class="y-axis" id="y-axis"></div>
+      
+      <!-- X-axis labels will be dynamically generated -->
+      <div class="x-axis" id="x-axis"></div>
+      
+      <!-- Stock line visualization will be dynamically generated -->
+      <svg class="stock-line" viewBox="0 0 1000 400" preserveAspectRatio="none" id="stock-line">
+        <polyline id="stock-polyline" points="" />
+      </svg>
+      
+      <!-- Stock area fill will be dynamically generated -->
+      <svg class="stock-area" viewBox="0 0 1000 400" preserveAspectRatio="none" id="stock-area">
+        <polygon id="stock-polygon" points="" />
+      </svg>
+      
+      <!-- DeepSeek Announcements will be dynamically generated -->
+      <div id="announcements-container"></div>
+    </div>
+    
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color nvidia-color"></div>
+        <span>NVIDIA Stock Price</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color announcement-color"></div>
+        <span>DeepSeek Announcements</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Stock data
+    const stockData = [
+      {"date": "2025-02-28", "close": 124.92},
+      {"date": "2025-02-27", "close": 120.15},
+      {"date": "2025-02-26", "close": 131.28},
+      {"date": "2025-02-25", "close": 126.63},
+      {"date": "2025-02-24", "close": 130.28},
+      {"date": "2025-02-21", "close": 134.43},
+      {"date": "2025-02-20", "close": 140.11},
+      {"date": "2025-02-19", "close": 139.23},
+      {"date": "2025-02-18", "close": 139.4},
+      {"date": "2025-02-14", "close": 138.85},
+      {"date": "2025-02-13", "close": 135.29},
+      {"date": "2025-02-12", "close": 131.14},
+      {"date": "2025-02-11", "close": 132.8},
+      {"date": "2025-02-10", "close": 133.57},
+      {"date": "2025-02-07", "close": 129.84},
+      {"date": "2025-02-06", "close": 128.68},
+      {"date": "2025-02-05", "close": 124.83},
+      {"date": "2025-02-04", "close": 118.65},
+      {"date": "2025-02-03", "close": 116.66},
+      {"date": "2025-01-31", "close": 120.07},
+      {"date": "2025-01-30", "close": 124.65},
+      {"date": "2025-01-29", "close": 123.7},
+      {"date": "2025-01-28", "close": 128.99},
+      {"date": "2025-01-27", "close": 118.42},
+      {"date": "2025-01-24", "close": 142.62},
+      {"date": "2025-01-23", "close": 147.22},
+      {"date": "2025-01-22", "close": 147.07},
+      {"date": "2025-01-21", "close": 140.83},
+      {"date": "2025-01-17", "close": 137.71},
+      {"date": "2025-01-16", "close": 133.57},
+      {"date": "2025-01-15", "close": 136.24},
+      {"date": "2025-01-14", "close": 131.76},
+      {"date": "2025-01-13", "close": 133.23},
+      {"date": "2025-01-10", "close": 135.91},
+      {"date": "2025-01-08", "close": 140.11},
+      {"date": "2025-01-07", "close": 140.14},
+      {"date": "2025-01-06", "close": 149.43},
+      {"date": "2025-01-03", "close": 144.47},
+      {"date": "2025-01-02", "close": 138.31},
+      {"date": "2024-12-31", "close": 134.29},
+      {"date": "2024-12-30", "close": 137.49},
+      {"date": "2024-12-27", "close": 137.01},
+      {"date": "2024-12-26", "close": 139.93},
+      {"date": "2024-12-24", "close": 140.22},
+      {"date": "2024-12-23", "close": 139.67},
+      {"date": "2024-12-20", "close": 134.7},
+      {"date": "2024-12-19", "close": 130.68},
+      {"date": "2024-12-18", "close": 128.91},
+      {"date": "2024-12-17", "close": 130.39},
+      {"date": "2024-12-16", "close": 132},
+      {"date": "2024-12-15", "close": 134.25},
+      {"date": "2024-12-12", "close": 137.34},
+      {"date": "2024-12-11", "close": 139.31},
+      {"date": "2024-12-10", "close": 135.07},
+      {"date": "2024-12-09", "close": 138.81},
+      {"date": "2024-12-06", "close": 142.44},
+      {"date": "2024-12-05", "close": 145.06},
+      {"date": "2024-12-04", "close": 145.14},
+      {"date": "2024-12-03", "close": 140.26},
+      {"date": "2024-12-02", "close": 138.63},
+    ];
+
+    // DeepSeek announcement dates
+    const announcements = [
+      { date: "2024-12-15", event: "DeepSeek v3 Announced" },
+      { date: "2025-02-10", event: "DeepSeek R1 Announced" }
+    ];
+
+    // Create a copy of the stock data for sorting
+    const sortedStockData = [...stockData];
+    
+    // Sort stock data by date (oldest to newest)
+    sortedStockData.sort((a, b) => {
+      // Parse dates manually to ensure consistent behavior
+      const dateA = a.date.split('-').map(Number);
+      const dateB = b.date.split('-').map(Number);
+      
+      // Compare years
+      if (dateA[0] !== dateB[0]) return dateA[0] - dateB[0];
+      // Compare months
+      if (dateA[1] !== dateB[1]) return dateA[1] - dateB[1];
+      // Compare days
+      return dateA[2] - dateB[2];
+    });
+
+    // Find min and max stock prices for scaling
+    const prices = sortedStockData.map(item => item.close);
+    const minPrice = Math.floor(Math.min(...prices) - 5);
+    const maxPrice = Math.ceil(Math.max(...prices) + 5);
+    const priceRange = maxPrice - minPrice;
+
+    // Generate Y-axis labels
+    const yAxis = document.getElementById('y-axis');
+    const ySteps = 6;
+    for (let i = 0; i < ySteps; i++) {
+      const price = Math.round(maxPrice - (i * (priceRange / (ySteps - 1))));
+      const span = document.createElement('span');
+      span.textContent = `$${price}`;
+      yAxis.appendChild(span);
+    }
+
+    // Generate X-axis labels (months)
+    const xAxis = document.getElementById('x-axis');
+    const months = ['Dec 2024', 'Jan 2025', 'Feb 2025'];
+    months.forEach(month => {
+      const span = document.createElement('span');
+      span.textContent = month;
+      xAxis.appendChild(span);
+    });
+
+    // Calculate SVG points for the stock line
+    const svgWidth = 1000;
+    const svgHeight = 400;
+    const margin = 0;
+    
+    // Get the earliest and latest dates
+    const startDate = new Date(sortedStockData[0].date);
+    const endDate = new Date(sortedStockData[sortedStockData.length - 1].date);
+    const dateRange = endDate.getTime() - startDate.getTime();
+    
+    // Create arrays to store points
+    const points = [];
+    
+    // Process data points in chronological order (oldest to newest)
+    sortedStockData.forEach(dataPoint => {
+      const date = new Date(dataPoint.date);
+      const x = ((date.getTime() - startDate.getTime()) / dateRange) * svgWidth;
+      const y = svgHeight - margin - ((dataPoint.close - minPrice) / priceRange) * (svgHeight - 2 * margin);
+      
+      points.push({ x, y });
+    });
+    
+    // Generate polyline points string
+    let polylinePoints = '';
+    points.forEach(point => {
+      polylinePoints += `${point.x},${point.y} `;
+    });
+    
+    // Generate polygon points string (includes bottom line)
+    let polygonPoints = `0,${svgHeight} `; // Start at bottom left
+    points.forEach(point => {
+      polygonPoints += `${point.x},${point.y} `;
+    });
+    polygonPoints += `${svgWidth},${svgHeight}`; // End at bottom right
+    
+    // Set the points for the polyline and polygon
+    document.getElementById('stock-polyline').setAttribute('points', polylinePoints);
+    document.getElementById('stock-polygon').setAttribute('points', polygonPoints);
+    
+    // Add DeepSeek announcements
+    const announcementsContainer = document.getElementById('announcements-container');
+    
+    announcements.forEach((announcement, index) => {
+      const announcementDate = new Date(announcement.date);
+      const xPosition = ((announcementDate.getTime() - startDate.getTime()) / dateRange) * 100; // as percentage
+      
+      const announcementDiv = document.createElement('div');
+      announcementDiv.className = 'announcement';
+      announcementDiv.style.left = `${xPosition}%`;
+      announcementDiv.style.transform = 'translateX(-50%)';
+      
+      // Calculate animation delay based on position
+      const animationDelay = (xPosition / 100) * parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--animation-duration'));
+      
+      announcementDiv.style.animation = `fadeInAnnouncement 0.5s ease-in-out ${animationDelay}s forwards`;
+      
+      const markerDiv = document.createElement('div');
+      markerDiv.className = 'announcement-marker';
+      
+      const textDiv = document.createElement('div');
+      textDiv.className = 'announcement-text';
+      textDiv.textContent = announcement.event;
+      
+      announcementDiv.appendChild(markerDiv);
+      announcementDiv.appendChild(textDiv);
+      
+      announcementsContainer.appendChild(announcementDiv);
+    });
+  </script>
+</body>
+</html>

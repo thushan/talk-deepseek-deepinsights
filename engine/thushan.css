@@ -69,3 +69,28 @@ a.learn-code {
 .reveal .star::before {
     content: "⭐";
 }
+.img_container 
+{
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+.glowing-text-red {
+    text-shadow: 0 0 5px #ff6666, 0 0 10px #ff3737, 0 0 15px #ff1111;
+}
+.glowing-text-blue {
+    text-shadow: 0 0 5px #66ccff, 0 0 10px #44aaff, 0 0 15px #22aaff;
+}
+.glowing-text-neon {
+    text-shadow: 0 0 5px #33cc33, 0 0 10px #33cc33, 0 0 15px #33cc33;
+}
+.glowing-text-yellow {
+    color: #fff; /* white text color */
+    text-shadow: 
+      0 0 10px #fff, /* inner white glow */
+      0 0 20px #fff, /* outer white glow */
+      0 0 30px #ff0, /* yellow glow */
+      0 0 40px #ff0, /* outer yellow glow */
+      0 0 50px #ff0, /* outermost yellow glow */
+      0 0 60px #ff0; /* outermost yellow glow */
+  }
